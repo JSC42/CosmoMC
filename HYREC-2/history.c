@@ -41,7 +41,7 @@
 #include "history.h"
 #include "helium.h"
 #define Xe_Max 1.1634102476
-#define debug_mode 1
+#define debug_mode 0
 /*************************************************************************************
 Hubble expansion rate in sec^-1.
 *************************************************************************************/
@@ -81,9 +81,8 @@ void hyrec_init()
 }
 
 void rec_build_history_camb_(const double *OmegaC, const double *OmegaB, const double *h0inp, const double *tcmb,
-                             const double *yp, const double *num_nu, double *xe, double *Tm, long int *nz)
+                             const double *yp, const double *num_nu, double *xe, double *Tm, long int *nz, const double *pann)
 {
-  // call rec_build_history_camb(OmegaC, OmegaB, OmegaN, Omegav, h0inp, tcmb, yp, num_nu)
 
 
   double zmax = 8000.;
@@ -123,6 +122,7 @@ void rec_build_history_camb_(const double *OmegaC, const double *OmegaB, const d
   rec_data.cosmo->obh2 = *OmegaB * h2;
   rec_data.cosmo->ocbh2 = (*OmegaB + *OmegaC) * h2;
   rec_data.cosmo->YHe = *yp;
+  rec_data.cosmo->inj_params->pann = *pann;
   rec_data.cosmo->Neff = *num_nu;                                                               /* effective number of neutrino species */
   rec_data.cosmo->fsR = rec_data.cosmo->meR = 1.;                                               /* Default: today's values */
   rec_data.cosmo->nH0 = 11.223846333047e-6 * rec_data.cosmo->obh2 * (1. - rec_data.cosmo->YHe); // number density of hudrogen today in cm-3
@@ -135,10 +135,10 @@ void rec_build_history_camb_(const double *OmegaC, const double *OmegaB, const d
 
   /* It seems there are no parameters related to DM annihilation in CAMB
      So, following parameters (inj_params) are meaningless here          */
-  rec_data.cosmo->inj_params->Mdm = 0.;
-  rec_data.cosmo->inj_params->pann = 0.;
+  rec_data.cosmo->inj_params->Mdm = 1.;
+  //rec_data.cosmo->inj_params->pann = 0.;
   rec_data.cosmo->inj_params->decay = 0.;
-  rec_data.cosmo->inj_params->DM_Channel = 0.;
+  rec_data.cosmo->inj_params->DM_Channel = 2.;
 
   /* Primodial black hole parameters */
   rec_data.cosmo->inj_params->PBH_Model = 1.;
@@ -982,7 +982,6 @@ char *rec_build_history(HYREC_DATA *data, int model, double *hubble_array)
 
   REC_COSMOPARAMS *cosmo = data->cosmo;
   int *error = &data->error;
-
   double *xe_output = data->xe_output, *Tm_output = data->Tm_output;
   int Nz = data->Nz;
   double zstart = data->zmax, zend = data->zmin;
@@ -995,9 +994,9 @@ char *rec_build_history(HYREC_DATA *data, int model, double *hubble_array)
   double z_out = 0., H_next;
   int flag = 10;
   double xe_i, Tm_i;
+  FILE *debug_file_tmp;
 
   Validate_Inputs(cosmo->inj_params);
-
   DLNA = cosmo->dlna;
   dz = zstart / Nz;
   // Index at which we start integrating Hydrogen recombination, and corresponding redshift

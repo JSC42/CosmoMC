@@ -1,5 +1,5 @@
 
-PlotXe = 2
+PlotXe = 1
 LineWidth = 2
 FontSize = 18
 
